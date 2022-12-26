@@ -49,14 +49,13 @@
 
 /* USER CODE BEGIN PV */
 
-uint32_t tick;
-uint8_t a;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+
+void lv_example_anim_2(lv_obj_t * obj);
 
 /* USER CODE END PFP */
 
@@ -107,9 +106,11 @@ int main(void)
   lv_obj_add_style(scr, &style_1, LV_PART_MAIN);
 
   lv_obj_t *label = lv_label_create(scr);
-  lv_label_set_text(label, "Hello");
+  lv_label_set_text(label, LV_SYMBOL_BLUETOOTH);
 //  lv_obj_set_pos(label, 20, 20);
   lv_scr_load(scr);
+
+  lv_example_anim_2(label);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,26 +119,6 @@ int main(void)
   {
 
 	  lv_timer_handler_run_in_period(5);
-
-
-	  if(HAL_GetTick() > (tick + 500)){
-
-		  if(a){
-
-			  lv_style_set_text_font(&style_1, &lv_font_montserrat_24);
-			  a = 0;
-			  lv_scr_load(scr);
-		  }
-		  else{
-
-			  lv_style_set_text_font(&style_1, &lv_font_unscii_8);
-			  a = 1;
-			  lv_scr_load(scr);
-		  }
-
-
-		  tick = HAL_GetTick();
-	  }
 
     /* USER CODE END WHILE */
 
@@ -211,6 +192,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
 		lv_tick_inc(1);
 	}
+}
+
+static void anim_x_cb(void *var, uint8_t v){
+
+    lv_obj_set_x(var, v);
+}
+
+
+void lv_example_anim_2(lv_obj_t * obj){
+
+    lv_obj_align(obj, LV_ALIGN_LEFT_MID, 10, 0);
+
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, obj);
+
+    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)anim_x_cb);
+    lv_anim_set_values(&a, 10, 80);
+    lv_anim_set_time(&a, 1000);
+    lv_anim_set_playback_delay(&a, 100);
+    lv_anim_set_playback_time(&a, 300);
+    lv_anim_set_repeat_delay(&a, 500);
+    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+    lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
+
+    lv_anim_start(&a);
 }
 
 /* USER CODE END 4 */
