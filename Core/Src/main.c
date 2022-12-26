@@ -48,7 +48,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-//lv_disp_t *oled;
+
+uint32_t tick;
+uint8_t a;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -116,6 +119,25 @@ int main(void)
 
 	  lv_timer_handler_run_in_period(5);
 
+
+	  if(HAL_GetTick() > (tick + 500)){
+
+		  if(a){
+
+			  lv_style_set_text_font(&style_1, &lv_font_montserrat_24);
+			  a = 0;
+			  lv_scr_load(scr);
+		  }
+		  else{
+
+			  lv_style_set_text_font(&style_1, &lv_font_unscii_8);
+			  a = 1;
+			  lv_scr_load(scr);
+		  }
+
+
+		  tick = HAL_GetTick();
+	  }
 
     /* USER CODE END WHILE */
 
