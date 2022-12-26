@@ -155,7 +155,7 @@ void SH1106_HwInit(I2C_HandleTypeDef *i2c){
 
 void SH1106_Send(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff){
 
-	uint8_t xPixels = X2 - X1;
+	uint8_t xPixels = X2 - X1 + 1;
 
 	uint8_t firstPage = (Y1 / 8);
 	uint8_t lastPage = (Y2 / 8);
