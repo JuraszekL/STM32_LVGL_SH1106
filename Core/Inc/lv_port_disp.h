@@ -36,7 +36,7 @@ extern "C" {
  * GLOBAL PROTOTYPES
  **********************/
 /* Initialize low level display driver */
-lv_disp_t * lv_port_disp_init(I2C_HandleTypeDef *I2C);
+void lv_port_disp_init(I2C_HandleTypeDef *I2C);
 
 /* Enable updating the screen (the flushing process) when disp_flush() is called by LVGL
  */

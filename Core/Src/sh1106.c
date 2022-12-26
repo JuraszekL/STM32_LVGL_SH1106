@@ -77,19 +77,16 @@ static I2C_HandleTypeDef *sh1106_i2c;
 
 static void sh1106_cmd(uint8_t cmd){
 
-//	i2c_write_byte(SH1106_ADR, SH1106_CMD, cmd, SH1106_I2C_NR);
 	HAL_I2C_Mem_Write(sh1106_i2c, SH1106_ADR, SH1106_CMD, 1, &cmd, 1, SH1106_TIMEOUT_MS);
 }
 
 static void sh1106_multi_cmd(uint8_t *cmd, uint8_t len){
 
-//	i2c_write_buff(SH1106_ADR, SH1106_MULTI_CMD, cmd, len, SH1106_I2C_NR);
 	HAL_I2C_Mem_Write(sh1106_i2c, SH1106_ADR, SH1106_MULTI_CMD, 1, cmd, len, SH1106_TIMEOUT_MS);
 }
 
 static void sh1106_multi_data(uint8_t *data, uint8_t len){
 
-//	i2c_write_buff(SH1106_ADR, SH1106_MULTI_DATA, data, len, SH1106_I2C_NR);
 	HAL_I2C_Mem_Write(sh1106_i2c, SH1106_ADR, SH1106_MULTI_DATA, 1, data, len, SH1106_TIMEOUT_MS);
 }
 
@@ -101,8 +98,6 @@ static void sh1106_multi_data(uint8_t *data, uint8_t len){
 
 static void sh1106_set_col(uint8_t col){
 
-	if(col > (HORIZONTAL_RES - 1)) return;
-
 	uint8_t buff[2];
 
 	buff[0] = ((col + SH1106_OFFSET) & 0b00001111) | SET_L_COL_ADDR;
@@ -112,8 +107,6 @@ static void sh1106_set_col(uint8_t col){
 }
 
 static void sh1106_set_page(uint8_t page){
-
-	if(page > (PAGES - 1)) return;
 
 	uint8_t a = (page & 0b00000111) | SET_PAGE_ADDR;
 
@@ -159,6 +152,9 @@ void SH1106_Send(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff){
 
 	uint8_t firstPage = (Y1 / 8);
 	uint8_t lastPage = (Y2 / 8);
+
+	if((firstPage > PAGES) || (lastPage > PAGES) || (firstPage > lastPage)) return;
+
 	uint8_t pages = lastPage - firstPage + 1;
 
 	for(uint8_t a = 0; a < pages; a++){

@@ -62,7 +62,7 @@ static void rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t * area);
  *   GLOBAL FUNCTIONS
  **********************/
 
-lv_disp_t * lv_port_disp_init(I2C_HandleTypeDef *I2C){
+void lv_port_disp_init(I2C_HandleTypeDef *I2C){
     /*-------------------------
      * Initialize your display
      * -----------------------*/
@@ -141,7 +141,7 @@ lv_disp_t * lv_port_disp_init(I2C_HandleTypeDef *I2C){
     //disp_drv.gpu_fill_cb = gpu_fill;
 
     /*Finally register the driver*/
-    return lv_disp_drv_register(&disp_drv);
+    lv_disp_drv_register(&disp_drv);
 }
 
 /**********************
