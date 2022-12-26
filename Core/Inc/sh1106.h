@@ -14,8 +14,10 @@
 //=========================================================
 
 extern void SH1106_HwInit(I2C_HandleTypeDef *i2c);
-extern void SH1106_Send(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff);
+extern void SH1106_WriteArea(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff);
 extern void SH1106_SendAll(uint8_t *Buff);
+extern void SH1106_WritePageNoBlock(uint8_t Page, uint8_t XStart, uint8_t Len, uint8_t *Buff);
+extern void SH1106_SetContrast(uint8_t Contrast);
 
 /*********************************************************************************/
 					             // CONFIGURATION //

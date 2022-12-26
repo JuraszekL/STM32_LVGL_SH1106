@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
@@ -92,12 +93,19 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART3_UART_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
+  MX_USART3_UART_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+
+  /////////////////////////////////////////////////////////////////
+
+  // LVGL init
+
+  /////////////////////////////////////////////////////////////////
   lv_init();
-  lv_port_disp_init(&hi2c1);
+  lv_port_DispInit(&hi2c1);
   HAL_TIM_Base_Start_IT(&htim6);
 
   lv_obj_t *scr = lv_obj_create(NULL);
@@ -186,6 +194,12 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+/////////////////////////////////////////////////////////////////
+
+// Interrupt callbacks
+
+/////////////////////////////////////////////////////////////////
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
 	if(htim->Instance == TIM6){
@@ -194,6 +208,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	}
 }
 
+#if USE_DMA
+void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c){
+
+	if(hi2c->Instance == I2C1){
+
+		lv_port_DmaTxComplete();
+	}
+}
+#endif
+
+/////////////////////////////////////////////////////////////////
+
+// Animations
+
+/////////////////////////////////////////////////////////////////
 static void anim_x_cb(void *var, uint8_t v){
 
     lv_obj_set_x(var, v);

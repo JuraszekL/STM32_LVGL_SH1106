@@ -26,7 +26,7 @@ extern "C" {
 /*********************
  *      DEFINES
  *********************/
-
+#define USE_DMA	1
 
 /**********************
  *      TYPEDEFS
@@ -36,7 +36,7 @@ extern "C" {
  * GLOBAL PROTOTYPES
  **********************/
 /* Initialize low level display driver */
-void lv_port_disp_init(I2C_HandleTypeDef *I2C);
+void lv_port_DispInit(I2C_HandleTypeDef *I2C);
 
 /* Enable updating the screen (the flushing process) when disp_flush() is called by LVGL
  */
@@ -45,6 +45,11 @@ void disp_enable_update(void);
 /* Disable updating the screen (the flushing process) when disp_flush() is called by LVGL
  */
 void disp_disable_update(void);
+
+#if USE_DMA
+/* Call this function when I2C transfer is complete  */
+void lv_port_DmaTxComplete(void);
+#endif
 
 /**********************
  *      MACROS

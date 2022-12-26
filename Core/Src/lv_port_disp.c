@@ -43,7 +43,12 @@
  **********************/
 static void disp_init(I2C_HandleTypeDef *i2c);
 
+#if USE_DMA == 0
 static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
+#else
+static void disp_flush_dma(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
+static void dma_send_routine(void);
+#endif
 static void set_px_cb(struct _lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y,
         				lv_color_t color, lv_opa_t opa);
 static void rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t * area);
@@ -54,6 +59,20 @@ static void rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t * area);
  *  STATIC VARIABLES
  **********************/
 
+/* those variables keep temporary values of data to send in non-blocking mode
+ * PageStart - number of page whhere "flushing" data starts of
+ * PagesToSend - how many pages have to be flushed (summary)
+ * PagesLeftToSend - how many pages left
+ * XPositionStart - which column data starts of
+ * XPixels - how many pixels within one page we want to flush
+ *
+ * and two helpful pointers */
+#if USE_DMA
+static volatile uint8_t PageStart, PagesToSend, PagesLeftToSend, XPositionStart, XPixels;
+static lv_disp_drv_t *DispDrv;
+static uint8_t *BuffPointer;
+#endif
+
 /**********************
  *      MACROS
  **********************/
@@ -62,7 +81,7 @@ static void rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t * area);
  *   GLOBAL FUNCTIONS
  **********************/
 
-void lv_port_disp_init(I2C_HandleTypeDef *I2C){
+void lv_port_DispInit(I2C_HandleTypeDef *I2C){
     /*-------------------------
      * Initialize your display
      * -----------------------*/
@@ -125,7 +144,11 @@ void lv_port_disp_init(I2C_HandleTypeDef *I2C){
     disp_drv.ver_res = MY_DISP_VER_RES;
 
     /*Used to copy the buffer's content to the display*/
+#if USE_DMA == 0
     disp_drv.flush_cb = disp_flush;
+#else
+    disp_drv.flush_cb = disp_flush_dma;
+#endif
     disp_drv.set_px_cb = set_px_cb;
     disp_drv.rounder_cb = rounder_cb;
 
@@ -173,13 +196,14 @@ void disp_disable_update(void)
 /*Flush the content of the internal buffer the specific area on the display
  *You can use DMA or any hardware acceleration to do this operation in the background but
  *'lv_disp_flush_ready()' has to be called when finished.*/
+#if USE_DMA == 0
 static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
 {
     if(disp_flush_enabled) {
         /*The most simple case (but also the slowest) to put all pixels to the screen one-by-one*/
 
     	uint8_t *buff = (uint8_t *)color_p;
-    	SH1106_Send(area->x1, area->x2, area->y1, area->y2, buff);
+    	SH1106_WriteArea(area->x1, area->x2, area->y1, area->y2, buff);
     }
 
     /*IMPORTANT!!!
@@ -187,8 +211,37 @@ static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_colo
     lv_disp_flush_ready(disp_drv);
 }
 
+#else
+static void disp_flush_dma(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
+{
+    if(disp_flush_enabled) {
+        /*The most simple case (but also the slowest) to put all pixels to the screen one-by-one*/
 
+    	/* fill global variables */
+    	PageStart = (area->y1 / 8);
+    	uint8_t lastPage = (area->y2 / 8);
+    	PagesLeftToSend = lastPage - PageStart + 1;
+    	PagesToSend = PagesLeftToSend;
 
+    	BuffPointer = (uint8_t *)color_p;
+    	XPositionStart = area->x1;
+    	XPixels = area->x2 - area->x1 + 1;
+
+    	DispDrv = disp_drv;
+
+    	/* start the routine where the magic happens :) */
+    	dma_send_routine();
+    }
+
+    /*IMPORTANT!!!
+     *do not inform now that you are ready with flushing because you are not!
+     *dma_send_routine() will do it when routine will be finished */
+//    lv_disp_flush_ready(disp_drv);
+}
+
+#endif
+
+/* two examples taken from internet... */
 static void set_px_cb(struct _lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y,
         				lv_color_t color, lv_opa_t opa){
 
@@ -212,6 +265,38 @@ static void rounder_cb(struct _lv_disp_drv_t * disp_drv, lv_area_t * area){
 	area->y1 = (area->y1 & (~0x7));
 	area->y2 = ((area->y2 & (~0x7)) + 7);
 }
+
+
+#if USE_DMA
+/* this function should be called everytime:
+ * - if the last transfer has been finished
+ * - if we want to send a new buffer */
+static void dma_send_routine(void){
+
+	if(PagesLeftToSend > 0){
+
+		/* if there is still something to send... */
+		uint8_t page_shift = PagesToSend - PagesLeftToSend;
+		uint8_t temp_page = (PageStart + page_shift);
+		SH1106_WritePageNoBlock(temp_page, XPositionStart, XPixels, &BuffPointer[page_shift * XPixels]);
+		PagesLeftToSend--;
+	}
+	else{
+
+		/*IMPORTANT!!
+		 * Here inform the graphics library that you are ready with the flushing */
+		lv_disp_flush_ready(DispDrv);
+	}
+}
+
+
+/* external function for user to call when transfer is complete */
+void lv_port_DmaTxComplete(void){
+
+	dma_send_routine();
+}
+#endif
+
 
 /*OPTIONAL: GPU INTERFACE*/
 

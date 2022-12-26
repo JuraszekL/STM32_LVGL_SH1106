@@ -65,7 +65,7 @@ static const uint8_t init_commands[] = {
 };
 
 
-
+// here i2c handler is stored
 static I2C_HandleTypeDef *sh1106_i2c;
 
 
@@ -74,20 +74,28 @@ static I2C_HandleTypeDef *sh1106_i2c;
 							// Low level I2C functions //
 /*********************************************************************************/
 
-
+// send single command
 static void sh1106_cmd(uint8_t cmd){
 
 	HAL_I2C_Mem_Write(sh1106_i2c, SH1106_ADR, SH1106_CMD, 1, &cmd, 1, SH1106_TIMEOUT_MS);
 }
 
+// send more commands in one transfer
 static void sh1106_multi_cmd(uint8_t *cmd, uint8_t len){
 
 	HAL_I2C_Mem_Write(sh1106_i2c, SH1106_ADR, SH1106_MULTI_CMD, 1, cmd, len, SH1106_TIMEOUT_MS);
 }
 
+// send buffer with data (poling)
 static void sh1106_multi_data(uint8_t *data, uint8_t len){
 
 	HAL_I2C_Mem_Write(sh1106_i2c, SH1106_ADR, SH1106_MULTI_DATA, 1, data, len, SH1106_TIMEOUT_MS);
+}
+
+// send buffer with data (non-blocking)
+static void sh1106_multi_data_noblock(uint8_t *data, uint8_t len){
+
+	HAL_I2C_Mem_Write_DMA(sh1106_i2c, SH1106_ADR, SH1106_MULTI_DATA, 1, data, len);
 }
 
 
@@ -140,13 +148,13 @@ void SH1106_HwInit(I2C_HandleTypeDef *i2c){
 
 /*********************************************************************************/
 
-						// Send buffer to oled //
+						// Send area to oled //
 				// Y1 and Y2 have to be (multiplication of 8) -1 //
 				// f.e. 0, 7, 15 etc.
 
 /*********************************************************************************/
 
-void SH1106_Send(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff){
+void SH1106_WriteArea(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff){
 
 	uint8_t xPixels = X2 - X1 + 1;
 
@@ -167,7 +175,7 @@ void SH1106_Send(uint8_t X1, uint8_t X2, uint8_t Y1, uint8_t Y2, uint8_t *Buff){
 
 /*********************************************************************************/
 
-								// Set whole buffer to oled //
+								// Send whole buffer to oled //
 
 /*********************************************************************************/
 
@@ -183,13 +191,26 @@ void SH1106_SendAll(uint8_t *Buff){
 
 /*********************************************************************************/
 
+					// Send single page in non-blocking mode //
+
+/*********************************************************************************/
+
+void SH1106_WritePageNoBlock(uint8_t Page, uint8_t XStart, uint8_t Len, uint8_t *Buff){
+
+	sh1106_set_page(Page);
+	sh1106_set_col(XStart);
+	sh1106_multi_data_noblock(Buff, Len);
+}
+
+/*********************************************************************************/
+
 								// Set oled contrast //
 
 /*********************************************************************************/
 
-void oled_set_contrast(uint8_t value){
+void SH1106_SetContrast(uint8_t Contrast){
 
-	uint8_t buff[2] = { SET_CONTRAST, value };
+	uint8_t buff[2] = { SET_CONTRAST, Contrast };
 	sh1106_multi_cmd(buff, 2);
 }
 
