@@ -97,6 +97,16 @@ int main(void)
   lv_init();
   lv_port_disp_init(&hi2c1);
   HAL_TIM_Base_Start_IT(&htim6);
+
+  lv_obj_t *scr = lv_obj_create(NULL);
+  lv_style_t style_1;
+  lv_style_init(&style_1);
+  lv_obj_add_style(scr, &style_1, LV_PART_MAIN);
+
+  lv_obj_t *label = lv_label_create(scr);
+  lv_label_set_text(label, "Hello");
+//  lv_obj_set_pos(label, 20, 20);
+  lv_scr_load(scr);
   /* USER CODE END 2 */
 
   /* Infinite loop */
